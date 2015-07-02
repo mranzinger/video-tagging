@@ -155,10 +155,14 @@ def GetActorPresenceStats(a_timeSeries):
     genderStats = { }
     ageStats = { }
     actorStats = { }
+   
+    faceCt = 0
     
     for ts, evt in a_timeSeries:
 
         for face in evt['face']:
+
+            faceCt += 1
 
             if u'gender' in face:
 
@@ -185,7 +189,7 @@ def GetActorPresenceStats(a_timeSeries):
 
                 if not name in actorStats:
                     actorStats[name] = 0.0
-                actorStats[name] += score
+                actorStats[name] += 1.0
 
     def NormStats(a_stats):
         acc = 0.0
@@ -198,7 +202,7 @@ def GetActorPresenceStats(a_timeSeries):
     NormStats(ageStats)
     #NormStats(actorStats)
     for k in actorStats:
-        actorStats[k] /= len(a_timeSeries)
+        actorStats[k] /= faceCt
 
     return {
         'gender': genderStats,
