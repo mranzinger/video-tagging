@@ -48,7 +48,10 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     else:
         comb['text'] = ''
 
-    print comb
+    element = (math.floor(a_time), comb)
+    a_queue.put(element)
+
+    #print comb
 
 
    # try:
@@ -112,32 +115,40 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
     l_pool.close()
     l_pool.join()
 
-    l_timedKeywords = []
-    print "Collecting results"
-    while not l_resultQueue.empty():
-        l_timedKeywords.append(l_resultQueue.get())
+    l_timedResps = []
+    while not l_resultsQueue.empty():
+        l_timedResps.append(l_resultQueue.get())
 
-    #sort by timestamp
-    l_rawTimeSeries = sorted(l_timedKeywords, key = lambda x: x[0])
-    l_timeSeries = { "results" : []}
+    # sort by timestamp
+    return sorted(l_timedResps, key = lambda x: x[0])
 
-    #display results of frame tagging
-    for k, g in itertools.groupby(l_rawTimeSeries, lambda x: x[0]):
-        l_resultsDict = {}
-        l_element = { "timestamp" : k}
-        for x in g:
-            for tag, score in x[1].iteritems():
-                if tag not in l_resultsDict:
-                    l_resultsDict[tag] = 0
-                l_resultsDict[tag] = l_resultsDict[tag] + score / float(l_imagesPerSecond)
-        l_keywordList = []
-        for tag in l_resultsDict:
-            l_keywordList.append({ 'text' : tag, 'score' : l_resultsDict[tag] })
-        l_element["keywords"] = l_keywordList
-        l_timeSeries['results'].append(l_element)
-        
-    print l_timeSeries
-    return l_timeSeries
+
+    #l_timedKeywords = []
+    #print "Collecting results"
+    #while not l_resultQueue.empty():
+    #    l_timedKeywords.append(l_resultQueue.get())
+
+    ##sort by timestamp
+    #l_rawTimeSeries = sorted(l_timedKeywords, key = lambda x: x[0])
+    #l_timeSeries = { "results" : []}
+
+    ##display results of frame tagging
+    #for k, g in itertools.groupby(l_rawTimeSeries, lambda x: x[0]):
+    #    l_resultsDict = {}
+    #    l_element = { "timestamp" : k}
+    #    for x in g:
+    #        for tag, score in x[1].iteritems():
+    #            if tag not in l_resultsDict:
+    #                l_resultsDict[tag] = 0
+    #            l_resultsDict[tag] = l_resultsDict[tag] + score / float(l_imagesPerSecond)
+    #    l_keywordList = []
+    #    for tag in l_resultsDict:
+    #        l_keywordList.append({ 'text' : tag, 'score' : l_resultsDict[tag] })
+    #    l_element["keywords"] = l_keywordList
+    #    l_timeSeries['results'].append(l_element)
+    #    
+    #print l_timeSeries
+    #return l_timeSeries
 
 def AnnotateVideo(a_filename, a_timeSeries):
 
@@ -178,8 +189,8 @@ def Main():
 
     print l_timeSeries
     
-    l_annotated = AnnotateVideo(l_filename, l_timeSeries) 
-    l_annotated.write_videofile("full_annotated_movie.mp4") 
+    #l_annotated = AnnotateVideo(l_filename, l_timeSeries) 
+    #l_annotated.write_videofile("full_annotated_movie.mp4") 
    
     return
 
