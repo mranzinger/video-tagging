@@ -27,7 +27,7 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
 
     tagURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageKeywords?apikey=%s&outputMode=json&imagePostMode=raw&forceShowAll=1" % a_apiKey
     faceURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageFaceTags?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
-    #textURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageSceneText?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
+    textURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageSceneText?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
 
     jsTags = GetCallJson(tagURL, a_jpeg)
     jsFace = None
@@ -55,25 +55,6 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     element = (math.floor(a_time), comb)
     a_queue.put(element)
 
-    #print comb
-
-
-   # try:
-   #     l_results = requests.post(url = l_baseURL, data = a_jpeg)
-   #     l_json = l_results.json()
-   #     l_dict = {}
-
-   #     for l_kwResult in l_json["imageKeywords"]:           
-   #         l_dict[l_kwResult['text']] = float(l_kwResult["score"])
-
-   #     l_element = ( math.floor(a_time), l_dict )
-   #     a_queue.put(l_element)
-   # except:
-   #     print "Trouble with AlchemyAPI"
-   #     l_element = ( math.floor(a_time) , {} )
-   #     a_queue.put(l_element)
-   # return
-
 def GetTimeSeriesForVideo(a_filename, a_apiKey):
 
     l_video = VideoFileClip(a_filename)
@@ -88,6 +69,9 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
     l_imagetimes = []
     
     for i in xrange(l_videoLength):
+        #if i >= 32:
+        #    break
+        
         print "Iteration %d" % i
 
         # Our goal: list of keywords for this iteration
@@ -130,7 +114,8 @@ def CollectStats(a_timeSeries):
 
     stats = { }
 
-    stats['common-tags'] = GetCommonTagStats(a_timeSeries)
+    stats['common_tags'] = GetCommonTagStats(a_timeSeries)
+    stats['actor_presence'] = GetActorPresenceStats(a_timeSeries)
 
     return stats
 
@@ -159,10 +144,66 @@ def GetCommonTagStats(a_timeSeries):
 
     return sorted(stats, key=lambda x: x[0], reverse=True)[:5]
 
-    #print a_timeSeries
-    #f = open('time-series.json', 'w')
-    #f.write(json.dumps(a_timeSeries, sort_keys=True, indent=4, separators=(',', ': ')))
-    #f.close()
+def GetActorPresenceStats(a_timeSeries):
+
+    genderStats = { }
+    ageStats = { }
+    actorStats = { }
+    
+    for ts, evt in a_timeSeries:
+
+        for face in evt['face']:
+
+            if u'gender' in face:
+
+                gender = face[u'gender'][u'gender']
+                score = float(face[u'gender'][u'score'])
+
+                if not gender in genderStats:
+                    genderStats[gender] = 0.0
+                genderStats[gender] += score
+
+            if u'age' in face:
+
+                rg = face[u'age'][u'ageRange']
+                score = float(face[u'age'][u'score'])
+
+                if not rg in ageStats:
+                    ageStats[rg] = 0.0
+                ageStats[rg] += score
+
+            if u'identity' in face:
+
+                name = face[u'identity'][u'name']
+                score = float(face[u'identity'][u'score'])
+
+                if not name in actorStats:
+                    actorStats[name] = 0.0
+                actorStats[name] += score
+
+    def NormStats(a_stats):
+        acc = 0.0
+        for k, v in a_stats.iteritems():
+            acc += v
+        for k in a_stats:
+            a_stats[k] /= acc
+
+    NormStats(genderStats)
+    NormStats(ageStats)
+    NormStats(actorStats)
+
+    return {
+        'gender': genderStats,
+        'age': ageStats,
+        'actorStats': actorStats
+    }
+
+def WriteJson(a_obj, a_filename):
+    f = open(a_filename, 'w')
+
+    f.write(json.dumps(a_obj, sort_keys=True, indent=4, separators=(',', ': ')))
+
+    f.close()
 
 def Main():
 
@@ -175,13 +216,11 @@ def Main():
     
     l_timeSeries = GetTimeSeriesForVideo(l_filename, l_apiKey)
 
+    WriteJson(l_timeSeries, 'time_series.json')
+
     stats = CollectStats(l_timeSeries)
 
-    f = open('movie_stats.json', 'w')
-
-    f.write(json.dumps(stats, sort_keys=True, indent=4, separators=(',', ': ')))
-
-    f.close()
+    WriteJson(stats, 'movie_stats.json')
 
     print 'All Done!!!'
 
