@@ -115,11 +115,63 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
 
     # sort by timestamp
     return sorted(l_timedResps, key = lambda x: x[0])
-    
-def CollectStats(a_timeSeries):
 
+
+    #l_timedKeywords = []
+    #print "Collecting results"
+    #while not l_resultQueue.empty():
+    #    l_timedKeywords.append(l_resultQueue.get())
+
+    ##sort by timestamp
+    #l_rawTimeSeries = sorted(l_timedKeywords, key = lambda x: x[0])
+    #l_timeSeries = { "results" : []}
+
+    ##display results of frame tagging
+    #for k, g in itertools.groupby(l_rawTimeSeries, lambda x: x[0]):
+    #    l_resultsDict = {}
+    #    l_element = { "timestamp" : k}
+    #    for x in g:
+    #        for tag, score in x[1].iteritems():
+    #            if tag not in l_resultsDict:
+    #                l_resultsDict[tag] = 0
+    #            l_resultsDict[tag] = l_resultsDict[tag] + score / float(l_imagesPerSecond)
+    #    l_keywordList = []
+    #    for tag in l_resultsDict:
+    #        l_keywordList.append({ 'text' : tag, 'score' : l_resultsDict[tag] })
+    #    l_element["keywords"] = l_keywordList
+    #    l_timeSeries['results'].append(l_element)
+    #    
+    #print l_timeSeries
+    #return l_timeSeries
+
+# def GetCelebrityTimeSeries(a_timeSeries):
+#     cts = {}
+#     for (time, dictionary) in a_timeSeries:
+#         cts[time] = []
+#         for face in dictionary['face']:
+#             if 'identity' not in face.keys():
+#                 continue
+#             cts[time].append((face['identity']['name'], float(face['identity']['score'])))
+#     # print "printing stats..."
+#     # print stats
+#     return cts
+
+# returns a list of times as a function of person
+def GetCelebrityTimeSeries(a_timeSeries):
+    cts = {}
+    for (time, dictionary) in a_timeSeries:
+        for face in dictionary['face']:
+            if 'identity' not in face.keys():
+                continue
+            if face['identity']['name'] not in cts.keys():
+                cts[face['identity']['name']]=[] 
+            cts[face['identity']['name']].append(float(time))
+    print cts
+    return cts
+
+def CollectStats(a_timeSeries):    
     stats = { }
-
+    stats["celebrity_time_series"] = GetCelebrityTimeSeries(a_timeSeries)
     stats['common_tags'] = GetCommonTagStats(a_timeSeries)
     stats['actor_presence'] = GetActorPresenceStats(a_timeSeries)
 
@@ -155,14 +207,10 @@ def GetActorPresenceStats(a_timeSeries):
     genderStats = { }
     ageStats = { }
     actorStats = { }
-   
-    faceCt = 0
     
     for ts, evt in a_timeSeries:
 
         for face in evt['face']:
-
-            faceCt += 1
 
             if u'gender' in face:
 
@@ -189,7 +237,7 @@ def GetActorPresenceStats(a_timeSeries):
 
                 if not name in actorStats:
                     actorStats[name] = 0.0
-                actorStats[name] += 1.0
+                actorStats[name] += score
 
     def NormStats(a_stats):
         acc = 0.0
@@ -202,7 +250,7 @@ def GetActorPresenceStats(a_timeSeries):
     NormStats(ageStats)
     #NormStats(actorStats)
     for k in actorStats:
-        actorStats[k] /= faceCt
+        actorStats[k] /= len(a_timeSeries)
 
     return {
         'gender': genderStats,
