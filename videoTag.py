@@ -30,6 +30,9 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     #textURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageSceneText?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
 
     jsTags = GetCallJson(tagURL, a_jpeg)
+    jsFace = None
+    jsText = None
+    
     jsFace = GetCallJson(faceURL, a_jpeg)
     #jsText = GetCallJson(textURL, a_jpeg)
 
@@ -44,10 +47,10 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     else:
         comb['face'] = []
 
-    #if jsText != None:
-    #    comb['text'] = jsText['sceneText']
-    #else:
-    #    comb['text'] = ''
+    if jsText != None:
+        comb['text'] = jsText['sceneText']
+    else:
+        comb['text'] = ''
 
     element = (math.floor(a_time), comb)
     a_queue.put(element)
@@ -122,66 +125,44 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
 
     # sort by timestamp
     return sorted(l_timedResps, key = lambda x: x[0])
-
-
-    #l_timedKeywords = []
-    #print "Collecting results"
-    #while not l_resultQueue.empty():
-    #    l_timedKeywords.append(l_resultQueue.get())
-
-    ##sort by timestamp
-    #l_rawTimeSeries = sorted(l_timedKeywords, key = lambda x: x[0])
-    #l_timeSeries = { "results" : []}
-
-    ##display results of frame tagging
-    #for k, g in itertools.groupby(l_rawTimeSeries, lambda x: x[0]):
-    #    l_resultsDict = {}
-    #    l_element = { "timestamp" : k}
-    #    for x in g:
-    #        for tag, score in x[1].iteritems():
-    #            if tag not in l_resultsDict:
-    #                l_resultsDict[tag] = 0
-    #            l_resultsDict[tag] = l_resultsDict[tag] + score / float(l_imagesPerSecond)
-    #    l_keywordList = []
-    #    for tag in l_resultsDict:
-    #        l_keywordList.append({ 'text' : tag, 'score' : l_resultsDict[tag] })
-    #    l_element["keywords"] = l_keywordList
-    #    l_timeSeries['results'].append(l_element)
-    #    
-    #print l_timeSeries
-    #return l_timeSeries
-
+    
 def CollectStats(a_timeSeries):
 
     stats = { }
 
+    stats['common-tags'] = GetCommonTagStats(a_timeSeries)
+
     return stats
 
-def AnnotateVideo(a_filename, a_timeSeries):
+def GetCommonTagStats(a_timeSeries):
 
-    l_originalVid = VideoFileClip(a_filename)
-    l_duration = math.floor(l_originalVid.duration)
-    l_vidClips = []
-    
-    #add keywords to individual frames
-    for i in xrange(int(l_duration)):
-        print "Annotating second %d" % i
-        l_subVid = l_originalVid.subclip(i, i+1)
-        l_keywords = []
-        for j in a_timeSeries['results'][i]['keywords']:
-            l_keywords.append(j['text'])
+    counts = { }
+
+    for ts, evt in a_timeSeries:
         
-        if l_keywords:
-            try:
-                l_txtClip = ( TextClip(','.join(l_keywords[:5]),fontsize=35,color='white', stroke_color='black', font = 'Courier-10-Pitch-Bold', stroke_width = 2)
-                              .set_position('center')
-                              .set_duration(1) )
-                l_vidClips.append(CompositeVideoClip([l_subVid, l_txtClip]))
-            except Exception as e:
-                l_vidClips.append(l_subVid)
-                print e
-    l_newVid = concatenate(l_vidClips)
-    return l_newVid
+        for tag in evt['tags']:
+            
+            txt = tag['text']
+            conf = tag['score']
+
+            if not txt in counts:
+                counts[txt] = 0.0
+
+            counts[txt] += float(conf)
+
+    stats = []
+    for k, v in counts.iteritems():
+
+        pct = v / len(a_timeSeries)
+
+        stats.append((pct, k))
+
+    return sorted(stats, key=lambda x: x[0], reverse=True)[:5]
+
+    #print a_timeSeries
+    #f = open('time-series.json', 'w')
+    #f.write(json.dumps(a_timeSeries, sort_keys=True, indent=4, separators=(',', ': ')))
+    #f.close()
 
 def Main():
 
