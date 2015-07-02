@@ -5,6 +5,7 @@ import Image
 import sys
 import itertools
 import requests, urllib, urllib2
+import json
 from moviepy.editor import *
 from multiprocessing import Pool, Lock, Queue, Manager
 
@@ -150,6 +151,12 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
     #print l_timeSeries
     #return l_timeSeries
 
+def CollectStats(a_timeSeries):
+
+    stats = { }
+
+    return stats
+
 def AnnotateVideo(a_filename, a_timeSeries):
 
     l_originalVid = VideoFileClip(a_filename)
@@ -187,11 +194,16 @@ def Main():
     
     l_timeSeries = GetTimeSeriesForVideo(l_filename, l_apiKey)
 
-    print l_timeSeries
-    
-    #l_annotated = AnnotateVideo(l_filename, l_timeSeries) 
-    #l_annotated.write_videofile("full_annotated_movie.mp4") 
-   
+    stats = CollectStats(l_timeSeries)
+
+    f = open('movie_stats.json', 'w')
+
+    f.write(json.dumps(stats, sort_keys=True, indent=4, separators=(',', ': ')))
+
+    f.close()
+
+    print 'All Done!!!'
+
     return
 
 
