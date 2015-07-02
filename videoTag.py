@@ -26,11 +26,11 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
 
     tagURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageKeywords?apikey=%s&outputMode=json&imagePostMode=raw&forceShowAll=1" % a_apiKey
     faceURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageFaceTags?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
-    textURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageSceneText?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
+    #textURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageSceneText?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
 
     jsTags = GetCallJson(tagURL, a_jpeg)
     jsFace = GetCallJson(faceURL, a_jpeg)
-    jsText = GetCallJson(textURL, a_jpeg)
+    #jsText = GetCallJson(textURL, a_jpeg)
 
     comb = { }
     if jsTags != None:
@@ -43,10 +43,10 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     else:
         comb['face'] = []
 
-    if jsText != None:
-        comb['text'] = jsText['sceneText']
-    else:
-        comb['text'] = ''
+    #if jsText != None:
+    #    comb['text'] = jsText['sceneText']
+    #else:
+    #    comb['text'] = ''
 
     element = (math.floor(a_time), comb)
     a_queue.put(element)
@@ -103,7 +103,7 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
     l_resultQueue = l_mgr.Queue()
     print "Sending images to AlchemyAPI"
     for l_image in enumerate(l_images):
-
+        
         l_buffer = StringIO.StringIO()
         l_image[1].save(l_buffer, format= 'JPEG')
         l_jpeg = l_buffer.getvalue()
@@ -116,7 +116,7 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
     l_pool.join()
 
     l_timedResps = []
-    while not l_resultsQueue.empty():
+    while not l_resultQueue.empty():
         l_timedResps.append(l_resultQueue.get())
 
     # sort by timestamp
