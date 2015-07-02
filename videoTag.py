@@ -92,7 +92,7 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
         # end of loop
     
     # Prepare to call AlchemyAPI
-    l_pool = Pool(processes = 32)
+    l_pool = Pool(processes = 8)
     l_mgr  = Manager()
     l_resultQueue = l_mgr.Queue()
     print "Sending images to AlchemyAPI"
@@ -196,7 +196,9 @@ def GetActorPresenceStats(a_timeSeries):
 
     NormStats(genderStats)
     NormStats(ageStats)
-    NormStats(actorStats)
+    #NormStats(actorStats)
+    for k in actorStats:
+        actorStats[k] /= len(a_timeSeries)
 
     return {
         'gender': genderStats,
