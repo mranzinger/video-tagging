@@ -6,20 +6,20 @@ import sys
 import itertools
 import requests, urllib, urllib2
 from moviepy.editor import *
-#from multiprocessing import Pool, Lock, Queue, Manager
+from multiprocessing import Pool, Lock, Queue, Manager
 
 
-#def GetCallJson(a_url, a_jpeg):
-#    try:
-#        print 'Calling API:', a_url
-#        results = requests.post(url= a_url, data= a_jpeg)
-#        js = results.json()
-#
-#        return js
-#
-#    except:
-#        print "Trouble with AlchemyAPI:", a_url
-#        return None
+def GetCallJson(a_url, a_jpeg):
+    try:
+        print 'Calling API:', a_url
+        results = requests.post(url= a_url, data= a_jpeg)
+        js = results.json()
+
+        return js
+
+    except:
+        print "Trouble with AlchemyAPI:", a_url
+        return None
 
 def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     # Some set up
@@ -35,17 +35,17 @@ def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     comb = { }
     if jsTags != None:
         comb['tags'] = jsTags['imageKeywords']
-    else
+    else:
         comb['tags'] = []
 
     if jsFace != None:    
         comb['face'] = jsFace['imageFaces']
-    else
+    else:
         comb['face'] = []
 
     if jsText != None:
         comb['text'] = jsText['sceneText']
-    else
+    else:
         comb['text'] = ''
 
     print comb
@@ -106,8 +106,8 @@ def GetTimeSeriesForVideo(a_filename, a_apiKey):
         l_jpeg = l_buffer.getvalue()
         
         #async call to AlchemyAPI
-        #l_pool.apply_async(AlchemyGetImageTag, (l_jpeg, l_imagetimes[l_image[0]], l_resultQueue, a_apiKey))    
-        AlchemyGetImageTag(l_jpeg, l_imagetimes[l_image[0]], l_resultQueue, a_apiKey)
+        l_pool.apply_async(AlchemyGetImageTag, (l_jpeg, l_imagetimes[l_image[0]], l_resultQueue, a_apiKey))    
+        #AlchemyGetImageTag(l_jpeg, l_imagetimes[l_image[0]], l_resultQueue, a_apiKey)
     
     l_pool.close()
     l_pool.join()
