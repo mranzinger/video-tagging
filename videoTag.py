@@ -1,12 +1,18 @@
 
 import StringIO
 import math
-import Image
+import platform
 import sys
 import itertools
 import requests, urllib, urllib2
 from moviepy.editor import *
 from multiprocessing import Pool, Lock, Queue, Manager
+
+if 'Darwin' == platform.system():
+    from PIL import Image
+else:
+    import Image
+
 
 
 def GetCallJson(a_url, a_jpeg):
