@@ -11,7 +11,7 @@ from multiprocessing import Pool, Lock, Queue, Manager
 
 def AlchemyGetImageTag(a_jpeg, a_time, a_queue):
     # Some set up
-    l_apikey = <YOUR API KEY HERE>
+    l_apikey = 'f57726c4a3b2c30a8e1ee3f95870b8e3865918dc'
     l_baseURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageKeywords?apikey=%s&outputMode=json&imagePostMode=raw&forceShowAll=1" % l_apikey
     try:
         l_results = requests.post(url = l_baseURL, data = a_jpeg)
