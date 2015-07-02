@@ -6,30 +6,68 @@ import sys
 import itertools
 import requests, urllib, urllib2
 from moviepy.editor import *
-from multiprocessing import Pool, Lock, Queue, Manager
+#from multiprocessing import Pool, Lock, Queue, Manager
 
 
-def AlchemyGetImageTag(a_jpeg, a_time, a_queue):
+#def GetCallJson(a_url, a_jpeg):
+#    try:
+#        print 'Calling API:', a_url
+#        results = requests.post(url= a_url, data= a_jpeg)
+#        js = results.json()
+#
+#        return js
+#
+#    except:
+#        print "Trouble with AlchemyAPI:", a_url
+#        return None
+
+def AlchemyGetImageTag(a_jpeg, a_time, a_queue, a_apiKey):
     # Some set up
-    l_apikey = <YOUR API KEY HERE>
-    l_baseURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageKeywords?apikey=%s&outputMode=json&imagePostMode=raw&forceShowAll=1" % l_apikey
-    try:
-        l_results = requests.post(url = l_baseURL, data = a_jpeg)
-        l_json = l_results.json()
-        l_dict = {}
 
-        for l_kwResult in l_json["imageKeywords"]:           
-            l_dict[l_kwResult['text']] = float(l_kwResult["score"])
+    tagURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageKeywords?apikey=%s&outputMode=json&imagePostMode=raw&forceShowAll=1" % a_apiKey
+    faceURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageFaceTags?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
+    textURL = "http://access.alchemyapi.com/calls/image/ImageGetRankedImageSceneText?apikey=%s&outputMode=json&imagePostMode=raw" % a_apiKey
 
-        l_element = ( math.floor(a_time), l_dict )
-        a_queue.put(l_element)
-    except:
-        print "Trouble with AlchemyAPI"
-        l_element = ( math.floor(a_time) , {} )
-        a_queue.put(l_element)
-    return
+    jsTags = GetCallJson(tagURL, a_jpeg)
+    jsFace = GetCallJson(faceURL, a_jpeg)
+    jsText = GetCallJson(textURL, a_jpeg)
 
-def GetTimeSeriesForVideo(a_filename):
+    comb = { }
+    if jsTags != None:
+        comb['tags'] = jsTags['imageKeywords']
+    else
+        comb['tags'] = []
+
+    if jsFace != None:    
+        comb['face'] = jsFace['imageFaces']
+    else
+        comb['face'] = []
+
+    if jsText != None:
+        comb['text'] = jsText['sceneText']
+    else
+        comb['text'] = ''
+
+    print comb
+
+
+   # try:
+   #     l_results = requests.post(url = l_baseURL, data = a_jpeg)
+   #     l_json = l_results.json()
+   #     l_dict = {}
+
+   #     for l_kwResult in l_json["imageKeywords"]:           
+   #         l_dict[l_kwResult['text']] = float(l_kwResult["score"])
+
+   #     l_element = ( math.floor(a_time), l_dict )
+   #     a_queue.put(l_element)
+   # except:
+   #     print "Trouble with AlchemyAPI"
+   #     l_element = ( math.floor(a_time) , {} )
+   #     a_queue.put(l_element)
+   # return
+
+def GetTimeSeriesForVideo(a_filename, a_apiKey):
 
     l_video = VideoFileClip(a_filename)
     l_videoLength = int(math.floor(l_video.duration))
@@ -68,7 +106,8 @@ def GetTimeSeriesForVideo(a_filename):
         l_jpeg = l_buffer.getvalue()
         
         #async call to AlchemyAPI
-        l_pool.apply_async(AlchemyGetImageTag, (l_jpeg, l_imagetimes[l_image[0]], l_resultQueue))    
+        #l_pool.apply_async(AlchemyGetImageTag, (l_jpeg, l_imagetimes[l_image[0]], l_resultQueue, a_apiKey))    
+        AlchemyGetImageTag(l_jpeg, l_imagetimes[l_image[0]], l_resultQueue, a_apiKey)
     
     l_pool.close()
     l_pool.join()
@@ -128,13 +167,14 @@ def AnnotateVideo(a_filename, a_timeSeries):
 
 def Main():
 
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         l_filename = sys.argv[1]
+        l_apiKey = sys.argv[2]
     else:
         print "Filepath of source video required\nExample: $ python videoTag.py /home/Ilovecats.mp4"
         return
     
-    l_timeSeries = GetTimeSeriesForVideo(l_filename)
+    l_timeSeries = GetTimeSeriesForVideo(l_filename, l_apiKey)
 
     print l_timeSeries
     
